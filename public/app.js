@@ -443,6 +443,9 @@ async function fetchExplanation(monumentData, detailed = false) {
     const moreDetailsBtn = document.getElementById('moreDetailsBtn');
     
     try {
+        const languageSelect = document.getElementById('languageSelect');
+        const selectedLanguage = languageSelect ? languageSelect.value : 'en';
+        
         const response = await fetch('/api/explain', {
             method: 'POST',
             headers: {
@@ -453,7 +456,8 @@ async function fetchExplanation(monumentData, detailed = false) {
                 type: monumentData.type,
                 lat: monumentData.lat,
                 lon: monumentData.lon,
-                detailed: detailed
+                detailed: detailed,
+                language: selectedLanguage
             })
         });
         
@@ -515,11 +519,37 @@ function speakText() {
     // Stop any ongoing speech
     stopSpeaking();
     
+    // Get selected language
+    const languageSelect = document.getElementById('languageSelect');
+    const selectedLanguage = languageSelect ? languageSelect.value : 'en';
+    
     // Create new utterance
     currentUtterance = new SpeechSynthesisUtterance(currentExplanationData.explanation);
     currentUtterance.rate = 0.9; // Slightly slower for clarity
     currentUtterance.pitch = 1.0;
     currentUtterance.volume = 1.0;
+    
+    // Set language-specific voice
+    const voices = speechSynthesis.getVoices();
+    let selectedVoice = null;
+    
+    if (selectedLanguage === 'es') {
+        // Try to find a Spanish voice
+        selectedVoice = voices.find(voice => voice.lang.startsWith('es')) ||
+                       voices.find(voice => voice.lang.includes('ES')) ||
+                       voices.find(voice => voice.name.toLowerCase().includes('spanish'));
+        currentUtterance.lang = 'es-ES';
+    } else {
+        // Try to find an English voice
+        selectedVoice = voices.find(voice => voice.lang.startsWith('en')) ||
+                       voices.find(voice => voice.lang.includes('US') || voice.lang.includes('GB'));
+        currentUtterance.lang = 'en-US';
+    }
+    
+    if (selectedVoice) {
+        currentUtterance.voice = selectedVoice;
+        console.log('Using voice:', selectedVoice.name, selectedVoice.lang);
+    }
     
     // Update button states when speech ends
     currentUtterance.onend = () => {
@@ -573,6 +603,28 @@ document.getElementById('radiusSelect')?.addEventListener('change', (e) => {
         findNearbyPOIs(currentUserLocation.lat, currentUserLocation.lng, currentRadius);
     }
 });
+
+// Language selector
+document.getElementById('languageSelect')?.addEventListener('change', (e) => {
+    // Save language preference to localStorage
+    localStorage.setItem('preferredLanguage', e.target.value);
+    console.log('Language changed to:', e.target.value);
+});
+
+// Load saved language preference
+const savedLanguage = localStorage.getItem('preferredLanguage');
+if (savedLanguage && document.getElementById('languageSelect')) {
+    document.getElementById('languageSelect').value = savedLanguage;
+}
+
+// Load voices for TTS (some browsers need this)
+if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = () => {
+        const voices = speechSynthesis.getVoices();
+        console.log('Available voices:', voices.length);
+    };
+}
+
 
 // Toggle sidebar button
 document.getElementById('toggleSidebar')?.addEventListener('click', toggleSidebar);

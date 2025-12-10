@@ -3,6 +3,10 @@ node_modules/
 
 # Environment variables (contains API keys)
 .env
+.env.*
+!.env.example
+functions/.env
+functions/.env.*
 
 # OS generated files
 .DS_Store
@@ -21,3 +25,8 @@ npm-debug.log*
 firebase-debug.log
 firebase-debug.*.log
 .runtimeconfig.json
+
+# Secrets and credentials
+*.pem
+*.key
+secrets/

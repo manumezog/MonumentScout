@@ -62,6 +62,13 @@
           <option value="25000">25 km radius</option>
         </select>
       </div>
+
+      <div class="select-wrapper">
+        <select id="languageSelect" title="Language">
+          <option value="en">🇬🇧 English</option>
+          <option value="es">🇪🇸 Español</option>
+        </select>
+      </div>
     </div>
 
     <!-- Search Box -->
@@ -100,7 +107,11 @@
       <div class="explanation-container">
         <div class="explanation-header">
           <h3 id="explanationTitle">Monument Information</h3>
-          <button class="close-btn" id="closeExplanation" aria-label="Close explanation">
+          <button
+            class="close-btn"
+            id="closeExplanation"
+            aria-label="Close explanation"
+          >
             ×
           </button>
         </div>
@@ -110,15 +121,22 @@
             <p>Generating explanation...</p>
           </div>
         </div>
-        <div class="explanation-footer" id="explanationFooter" style="display: none;">
+        <div
+          class="explanation-footer"
+          id="explanationFooter"
+          style="display: none"
+        >
           <button class="btn-more-details" id="moreDetailsBtn">
             📖 More Details
           </button>
           <div class="tts-controls">
-            <button class="btn-tts" id="speakBtn" title="Read aloud">
-              🔊
-            </button>
-            <button class="btn-tts" id="stopSpeakBtn" title="Stop reading" style="display: none;">
+            <button class="btn-tts" id="speakBtn" title="Read aloud">🔊</button>
+            <button
+              class="btn-tts"
+              id="stopSpeakBtn"
+              title="Stop reading"
+              style="display: none"
+            >
               🔇
             </button>
           </div>

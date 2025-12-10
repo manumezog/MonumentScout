@@ -19,6 +19,8 @@ Monument Scout is a modern, location-aware web application that helps you explor
 - **🔍 Customizable Radius**: Search within 1km, 5km, 10km, or 25km
 - **📋 Interactive List**: Sidebar with ranked monuments showing distance and type
 - **🗺️ Interactive Map**: Powered by Leaflet.js with OpenStreetMap tiles
+- **🤖 AI Explanations**: Get instant AI-generated summaries about any monument
+- **🔊 Text-to-Speech**: Listen to monument descriptions with browser-native audio
 - **🔒 Secure Architecture**: API calls handled server-side to protect sensitive data
 
 ### 🎨 Modern UI/UX
@@ -33,9 +35,18 @@ Monument Scout is a modern, location-aware web application that helps you explor
 ### 🌐 Data Source
 
 - **Overpass API**: Direct access to OpenStreetMap data
-- **No API Keys Required**: Free and open-source data
+- **OpenRouter AI**: Free AI models for monument explanations
 - **Comprehensive Coverage**: Global database of tourist attractions
 - **Real-time Updates**: Always current with OSM contributions
+
+### 🤖 AI-Powered Features
+
+- **Smart Explanations**: AI-generated summaries using Google Gemini Flash 1.5
+- **Two Detail Levels**: Brief (2-3 sentences) or detailed (4-5 sentences) explanations
+- **Historical Context**: Learn about significance, architecture, and interesting facts
+- **Text-to-Speech**: Browser-native audio playback with visual controls
+- **Extremely Affordable**: ~$0.00005 per explanation (~20,000 explanations per $1)
+- **Offline TTS**: Voice synthesis works without internet connection
 
 ---
 
@@ -46,6 +57,7 @@ Monument Scout is a modern, location-aware web application that helps you explor
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - A modern web browser (Chrome, Firefox, Safari, Edge)
 - Location services enabled on your device
+- [OpenRouter API Key](https://openrouter.ai/keys) (free) for AI explanations
 
 ### Installation
 
@@ -60,21 +72,47 @@ Monument Scout is a modern, location-aware web application that helps you explor
 
    ```bash
    npm install
+   cd functions
+   npm install
+   cd ..
    ```
 
-3. **Start the server**
+3. **Configure AI Features (Optional)**
+
+   Create a `.env` file in the project root:
 
    ```bash
-   npm start
+   echo "OPENROUTER_API_KEY=your_key_here" > .env
    ```
 
-4. **Open in browser**
+   Get your free API key at [openrouter.ai/keys](https://openrouter.ai/keys)
 
-   ```
-   http://localhost:3000
+   > [!IMPORTANT] > **Security**: The `.env` file is gitignored and will NOT be committed to GitHub. For production, set the secret in Firebase:
+   >
+   > ```bash
+   > firebase functions:secrets:set OPENROUTER_API_KEY
+   > ```
+   >
+   > Then paste your API key when prompted.
+
+4. **Deploy to Firebase** (for production)
+
+   ```bash
+   firebase deploy
    ```
 
-5. **Allow location access** when prompted by your browser
+   Or run locally:
+
+   ```bash
+   firebase emulators:start
+   ```
+
+5. **Open in browser**
+
+   - **Production**: Your Firebase hosting URL
+   - **Local**: `http://localhost:5000`
+
+6. **Allow location access** when prompted by your browser
 
 ---
 
@@ -85,9 +123,13 @@ MonumentScout/
 ├── public/
 │   ├── index.html          # Main HTML with UI components
 │   ├── style.css           # Modern CSS with glassmorphism
-│   └── app.js              # Client-side JavaScript
-├── server.js               # Express server with Overpass API integration
-├── package.json            # Dependencies and scripts
+│   └── app.js              # Client-side JavaScript with AI integration
+├── functions/
+│   ├── index.js            # Firebase Cloud Functions (API endpoints)
+│   └── package.json        # Functions dependencies
+├── firebase.json           # Firebase configuration
+├── .env                    # Environment variables (API keys)
+├── package.json            # Project dependencies
 ├── .gitignore             # Git ignore rules
 └── README.md              # This file
 ```
@@ -105,28 +147,29 @@ MonumentScout/
 │  │  HTML/CSS/JavaScript                      │  │
 │  │  - Leaflet.js for maps                    │  │
 │  │  - Geolocation API                        │  │
+│  │  - Web Speech API (TTS)                   │  │
 │  │  - Modern UI with glassmorphism           │  │
 │  └──────────────────────────────────────────┘  │
 └─────────────────┬───────────────────────────────┘
                   │ HTTPS
                   ▼
 ┌─────────────────────────────────────────────────┐
-│              Node.js/Express Server              │
+│         Firebase Cloud Functions (Node.js)       │
 │  ┌──────────────────────────────────────────┐  │
-│  │  - Handles API requests                   │  │
-│  │  - Queries Overpass API                   │  │
+│  │  /api/nearby - Overpass API proxy        │  │
+│  │  /api/explain - AI explanations          │  │
 │  │  - Filters and transforms data            │  │
-│  │  - Serves static files                    │  │
+│  │  - Calls OpenRouter AI                    │  │
 │  └──────────────────────────────────────────┘  │
-└─────────────────┬───────────────────────────────┘
-                  │ HTTPS
-                  ▼
-┌─────────────────────────────────────────────────┐
-│              Overpass API (OSM)                  │
-│  - OpenStreetMap database                        │
-│  - Tourist attraction data                       │
-│  - Free and open-source                          │
-└─────────────────────────────────────────────────┘
+└─────────┬──────────────────────┬────────────────┘
+          │                      │
+          │ HTTPS                │ HTTPS
+          ▼                      ▼
+┌─────────────────────┐  ┌──────────────────────┐
+│  Overpass API (OSM) │  │   OpenRouter API     │
+│  - Monument data    │  │  - Gemini Flash 1.5  │
+│  - Free & open      │  │  - Free AI models    │
+└─────────────────────┘  └──────────────────────┘
 ```
 
 ### Security Features
@@ -173,6 +216,25 @@ MonumentScout/
 - **Click markers**: View details in popup
 - **Zoom/Pan**: Standard map controls
 
+### 🤖 Using AI Explanations
+
+1. **Click "🤖 Explain"** button on any monument in the sidebar
+2. **Wait for AI** to generate the explanation (2-4 seconds)
+3. **Read the summary** displayed in the modal
+4. **Click "📖 More Details"** for expanded explanation (optional)
+5. **Click 🔊** to hear the text read aloud
+6. **Click 🔇** to stop the audio playback
+7. **Close modal** by clicking X or clicking outside
+
+**Features:**
+
+- **Brief Mode**: Quick 2-3 sentence summary
+- **Detailed Mode**: Comprehensive 4-5 sentence explanation with historical context
+- **Text-to-Speech**: Browser-native voice synthesis (works offline)
+- **Mobile Friendly**: Fully responsive modal design
+
+**Note:** AI explanations require an OpenRouter API key. See setup instructions above.
+
 ---
 
 ## 🛠️ Technology Stack
@@ -187,11 +249,13 @@ MonumentScout/
   - Responsive design
 - **JavaScript (ES6+)**: Client-side logic
   - Geolocation API
+  - Web Speech API (text-to-speech)
   - Fetch API for AJAX
   - Event-driven architecture
 
 ### Backend
 
+- **Firebase Cloud Functions**: Serverless backend
 - **Node.js**: JavaScript runtime
 - **Express.js**: Web server framework
 - **node-fetch**: HTTP client for API calls
@@ -201,6 +265,8 @@ MonumentScout/
 - **Leaflet.js**: Interactive map library
 - **OpenStreetMap**: Free map tiles
 - **Overpass API**: OpenStreetMap query service
+- **OpenRouter**: AI model gateway
+- **Google Gemini Flash 1.5**: Ultra-cheap AI model for explanations ($0.075/1M input tokens)
 
 ---
 
@@ -347,18 +413,41 @@ The app is structured to be easily converted to a Progressive Web App:
 - **Firewall**: Check if OpenStreetMap is blocked
 - **Browser console**: Check for JavaScript errors
 
+### AI Explanations Not Working
+
+- **Missing API key**: Add `OPENROUTER_API_KEY` to `.env` file
+- **Invalid API key**: Verify key is correct at [openrouter.ai/keys](https://openrouter.ai/keys)
+- **Not deployed**: Run `firebase deploy --only functions` after adding key
+- **Rate limits**: Free tier has usage limits, wait and try again
+- **Network issues**: Check internet connection
+
+### Text-to-Speech Not Working
+
+- **Browser compatibility**: Use Chrome, Edge, or Safari for best results
+- **No voices available**: Some browsers have limited voice support
+- **Permissions**: Check browser audio permissions
+- **Try different browser**: Firefox has limited TTS support
+
 ---
 
 ## 🚧 Future Enhancements
 
+### ✅ Recently Completed
+
+- [x] **AI-powered monument explanations** - Using OpenRouter with Gemini Flash 1.5
+- [x] **Text-to-speech functionality** - Browser-native voice synthesis
+- [x] **Two-tier explanation system** - Brief and detailed modes
+- [x] **Glassmorphism modal UI** - Beautiful, responsive design
+
 ### Phase 2 Features
 
-- [ ] Monument detail modal with photos
-- [ ] Favorites/bookmarking system
+- [ ] Monument detail modal with photos from Wikimedia
+- [ ] Favorites/bookmarking system with localStorage
 - [ ] Route drawing to selected monument
 - [ ] Marker clustering for many results
 - [ ] Manual location search
 - [ ] Share functionality
+- [ ] Explanation caching to reduce API calls
 
 ### Phase 3 Features
 
@@ -366,8 +455,9 @@ The app is structured to be easily converted to a Progressive Web App:
 - [ ] Service worker for caching
 - [ ] Geolocation tracking mode
 - [ ] Custom map themes
-- [ ] Multi-language support
+- [ ] Multi-language support for explanations
 - [ ] User reviews and ratings
+- [ ] Voice selection for TTS
 
 ### Phase 4 Features
 

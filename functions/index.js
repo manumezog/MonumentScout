@@ -92,26 +92,40 @@ app.get('/api/nearby', async (req, res) => {
 
 // Endpoint for AI-generated monument explanations
 app.post('/api/explain', async (req, res) => {
-    const { name, type, lat, lon, detailed } = req.body;
+    const { name, type, lat, lon, detailed, language = 'en' } = req.body;
 
     if (!name) {
         return res.status(400).send({ error: 'Missing monument name' });
     }
 
-    // Get OpenRouter API key from environment
+    // Get OpenRouter API key from Firebase Secrets
     const apiKey = process.env.OPENROUTER_API_KEY;
+    
     if (!apiKey) {
         console.error('OPENROUTER_API_KEY not configured');
+        console.error('Available env vars:', Object.keys(process.env));
         return res.status(500).send({ 
             error: 'AI service not configured. Please add OPENROUTER_API_KEY to environment variables.' 
         });
     }
+    
+    console.log('API Key found, length:', apiKey.length);
 
     try {
-        // Prepare the prompt based on whether detailed explanation is requested
-        const prompt = detailed 
-            ? `Provide a detailed, educational explanation (4-5 sentences) about ${name}, a ${type || 'monument'}. Include historical significance, architectural features, and interesting facts. Be informative and engaging.`
-            : `Provide a brief, interesting summary (2-3 sentences) about ${name}, a ${type || 'monument'}. Focus on what makes it special and worth visiting.`;
+        // Prepare the prompt based on language and detail level
+        const prompts = {
+            en: {
+                brief: `Provide a brief, interesting summary (2-3 sentences) about ${name}, a ${type || 'monument'}. Focus on what makes it special and worth visiting.`,
+                detailed: `Provide a detailed, educational explanation (4-5 sentences) about ${name}, a ${type || 'monument'}. Include historical significance, architectural features, and interesting facts. Be informative and engaging.`
+            },
+            es: {
+                brief: `Proporciona un resumen breve e interesante (2-3 oraciones) sobre ${name}, un ${type || 'monumento'}. Enfócate en lo que lo hace especial y digno de visitar.`,
+                detailed: `Proporciona una explicación detallada y educativa (4-5 oraciones) sobre ${name}, un ${type || 'monumento'}. Incluye su importancia histórica, características arquitectónicas y datos interesantes. Sé informativo y atractivo.`
+            }
+        };
+        
+        const selectedLanguage = language === 'es' ? 'es' : 'en';
+        const prompt = detailed ? prompts[selectedLanguage].detailed : prompts[selectedLanguage].brief;
 
         // Call OpenRouter API with free Gemini Flash model
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -123,7 +137,7 @@ app.post('/api/explain', async (req, res) => {
                 'X-Title': 'Monument Scout' // Optional: your app name
             },
             body: JSON.stringify({
-                model: 'google/gemini-flash-1.5', // Free model
+                model: 'openai/gpt-4o-mini-2024-07-18', // Exact OpenRouter model ID
                 messages: [
                     {
                         role: 'user',
@@ -165,6 +179,11 @@ app.post('/api/explain', async (req, res) => {
     }
 });
 
-// Export the Express app as a Cloud Function
-exports.api = onRequest(app);
+// Export the Express app as a Cloud Function with secrets
+exports.api = onRequest(
+    {
+        secrets: ['OPENROUTER_API_KEY']
+    },
+    app
+);
 
