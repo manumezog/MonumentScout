@@ -78,7 +78,10 @@ app.get('/api/nearby', async (req, res) => {
                 class: tags.tourism ? 'tourism' : (tags.historic ? 'historic' : 'amenity'),
                 tags: tags
             };
-        }).filter(place => place.lat && place.lon); // Only include places with valid coordinates
+        }).filter(place => {
+            // Only include places with valid coordinates and a proper name
+            return place.lat && place.lon && place.name !== 'Unknown Place';
+        });
         
         console.log(`After processing: ${touristAttractions.length} tourist attractions found`);
         
