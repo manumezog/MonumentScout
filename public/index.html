@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="Discover monuments and tourist attractions near you with Monument Scout - a location-aware web application"
+    />
+    <meta
+      name="keywords"
+      content="monuments, tourism, maps, attractions, landmarks, travel"
+    />
+    <meta name="author" content="Monument Scout" />
+    <meta name="theme-color" content="#4285f4" />
+
+    <title>🏛️ Monument Scout</title>
+
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>"
+    />
+
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <div class="app-title">
+        <span class="emoji">🏛️</span>
+        <span>Monument Scout</span>
+      </div>
+
+      <div class="control-divider"></div>
+
+      <button id="refreshBtn" class="btn btn-primary" title="Refresh location">
+        <span>📍</span>
+        <span>Refresh</span>
+      </button>
+
+      <div class="select-wrapper">
+        <select id="radiusSelect" title="Search radius">
+          <option value="1000">1 km radius</option>
+          <option value="5000" selected>5 km radius</option>
+          <option value="10000">10 km radius</option>
+          <option value="25000">25 km radius</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-box" style="display: none">
+      <input
+        type="text"
+        id="searchInput"
+        class="search-input"
+        placeholder="🔍 Search for a location..."
+        aria-label="Search for a location"
+      />
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">📍 Nearby Monuments</div>
+        <button class="close-btn" id="closeSidebar" aria-label="Close sidebar">
+          ×
+        </button>
+      </div>
+      <div class="monument-list" id="monumentList">
+        <div class="empty-state">
+          <div class="empty-state-icon">🏛️</div>
+          <p>No monuments found yet.</p>
+          <p style="font-size: 13px; margin-top: 8px">
+            Enable location to discover nearby attractions!
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle Sidebar Button -->
+    <button
+      class="toggle-sidebar-btn"
+      id="toggleSidebar"
+      title="View monument list"
+    >
+      📋
+      <span class="badge" id="monumentCount" style="display: none">0</span>
+    </button>
+
+    <!-- Leaflet JS -->
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <!-- Custom JS -->
+    <script src="app.js"></script>
+  </body>
+</html>
