@@ -336,11 +336,12 @@ function updateSidebar(pois) {
         }
         
         html += `
-            <div class="monument-item" data-index="${index}" data-lat="${poi.lat}" data-lon="${poi.lon}">
+            <div class="monument-item" data-index="${index}" data-lat="${poi.lat}" data-lon="${poi.lon}" data-name="${name.split(',')[0]}" data-type="${type}">
                 <div class="monument-rank">#${index + 1}</div>
                 <div class="monument-name">${name.split(',')[0]}</div>
                 <div class="monument-type">📍 ${type}</div>
                 ${distanceText ? `<div class="monument-distance">📏 ${distanceText}</div>` : ''}
+                <button class="explain-btn" data-index="${index}">🤖 Explain</button>
             </div>
         `;
     });
@@ -349,7 +350,12 @@ function updateSidebar(pois) {
     
     // Add click handlers to monument items
     document.querySelectorAll('.monument-item').forEach(item => {
-        item.addEventListener('click', () => {
+        item.addEventListener('click', (e) => {
+            // Don't zoom if clicking the Explain button
+            if (e.target.classList.contains('explain-btn')) {
+                return;
+            }
+            
             const lat = parseFloat(item.dataset.lat);
             const lon = parseFloat(item.dataset.lon);
             const index = parseInt(item.dataset.index);
@@ -368,12 +374,189 @@ function updateSidebar(pois) {
             }
         });
     });
+    
+    // Add click handlers to Explain buttons
+    document.querySelectorAll('.explain-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent monument item click
+            const index = parseInt(btn.dataset.index);
+            const poi = pois[index];
+            if (poi) {
+                showExplanation(poi);
+            }
+        });
+    });
 }
 
 // Toggle sidebar
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     sidebar.classList.toggle('open');
+}
+
+// ===== AI Explanation Feature =====
+
+let currentExplanationData = null;
+let speechSynthesis = window.speechSynthesis;
+let currentUtterance = null;
+
+// Show explanation modal
+function showExplanation(poi) {
+    const modal = document.getElementById('explanationModal');
+    const title = document.getElementById('explanationTitle');
+    const body = document.getElementById('explanationBody');
+    const footer = document.getElementById('explanationFooter');
+    
+    // Store current monument data
+    currentExplanationData = {
+        name: poi.display_name || poi.name || 'Unknown Place',
+        type: poi.type || poi.class || 'attraction',
+        lat: poi.lat,
+        lon: poi.lon
+    };
+    
+    // Update modal title
+    title.textContent = currentExplanationData.name.split(',')[0];
+    
+    // Show loading state
+    body.innerHTML = `
+        <div class="explanation-loading">
+            <div class="spinner"></div>
+            <p>Generating explanation...</p>
+        </div>
+    `;
+    
+    // Hide footer initially
+    footer.style.display = 'none';
+    
+    // Show modal
+    modal.classList.add('active');
+    
+    // Fetch explanation
+    fetchExplanation(currentExplanationData, false);
+}
+
+// Fetch explanation from API
+async function fetchExplanation(monumentData, detailed = false) {
+    const body = document.getElementById('explanationBody');
+    const footer = document.getElementById('explanationFooter');
+    const moreDetailsBtn = document.getElementById('moreDetailsBtn');
+    
+    try {
+        const response = await fetch('/api/explain', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: monumentData.name,
+                type: monumentData.type,
+                lat: monumentData.lat,
+                lon: monumentData.lon,
+                detailed: detailed
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch explanation');
+        }
+        
+        const data = await response.json();
+        
+        // Display explanation
+        body.innerHTML = `<p class="explanation-text">${data.explanation}</p>`;
+        
+        // Show footer
+        footer.style.display = 'flex';
+        
+        // Update More Details button state
+        if (detailed) {
+            moreDetailsBtn.disabled = true;
+            moreDetailsBtn.textContent = '✓ Detailed View';
+        } else {
+            moreDetailsBtn.disabled = false;
+            moreDetailsBtn.textContent = '📖 More Details';
+        }
+        
+        // Store explanation for TTS
+        currentExplanationData.explanation = data.explanation;
+        
+    } catch (error) {
+        console.error('Error fetching explanation:', error);
+        body.innerHTML = `
+            <p class="explanation-text" style="color: rgba(255, 255, 255, 0.7);">
+                ⚠️ ${error.message || 'Failed to generate explanation. Please try again later.'}
+            </p>
+        `;
+        footer.style.display = 'flex';
+        moreDetailsBtn.disabled = true;
+    }
+}
+
+// Close explanation modal
+function closeExplanationModal() {
+    const modal = document.getElementById('explanationModal');
+    modal.classList.remove('active');
+    
+    // Stop any ongoing speech
+    stopSpeaking();
+    
+    // Reset data
+    currentExplanationData = null;
+}
+
+// Text-to-speech functions
+function speakText() {
+    if (!currentExplanationData || !currentExplanationData.explanation) {
+        return;
+    }
+    
+    // Stop any ongoing speech
+    stopSpeaking();
+    
+    // Create new utterance
+    currentUtterance = new SpeechSynthesisUtterance(currentExplanationData.explanation);
+    currentUtterance.rate = 0.9; // Slightly slower for clarity
+    currentUtterance.pitch = 1.0;
+    currentUtterance.volume = 1.0;
+    
+    // Update button states when speech ends
+    currentUtterance.onend = () => {
+        document.getElementById('speakBtn').style.display = 'block';
+        document.getElementById('stopSpeakBtn').style.display = 'none';
+    };
+    
+    // Start speaking
+    speechSynthesis.speak(currentUtterance);
+    
+    // Update button states
+    document.getElementById('speakBtn').style.display = 'none';
+    document.getElementById('stopSpeakBtn').style.display = 'block';
+}
+
+function stopSpeaking() {
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+    
+    // Reset button states
+    document.getElementById('speakBtn').style.display = 'block';
+    document.getElementById('stopSpeakBtn').style.display = 'none';
+}
+
+// Load more details
+function loadMoreDetails() {
+    if (currentExplanationData) {
+        const body = document.getElementById('explanationBody');
+        body.innerHTML = `
+            <div class="explanation-loading">
+                <div class="spinner"></div>
+                <p>Loading detailed explanation...</p>
+            </div>
+        `;
+        fetchExplanation(currentExplanationData, true);
+    }
 }
 
 // ===== Event Listeners =====
@@ -403,6 +586,13 @@ document.getElementById('sidebar')?.addEventListener('click', (e) => {
         toggleSidebar();
     }
 });
+
+// Explanation modal event listeners
+document.getElementById('closeExplanation')?.addEventListener('click', closeExplanationModal);
+document.getElementById('explanationOverlay')?.addEventListener('click', closeExplanationModal);
+document.getElementById('moreDetailsBtn')?.addEventListener('click', loadMoreDetails);
+document.getElementById('speakBtn')?.addEventListener('click', speakText);
+document.getElementById('stopSpeakBtn')?.addEventListener('click', stopSpeaking);
 
 // Start the application when the page loads
 document.addEventListener('DOMContentLoaded', () => {

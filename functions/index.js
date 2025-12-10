@@ -90,5 +90,81 @@ app.get('/api/nearby', async (req, res) => {
     }
 });
 
+// Endpoint for AI-generated monument explanations
+app.post('/api/explain', async (req, res) => {
+    const { name, type, lat, lon, detailed } = req.body;
+
+    if (!name) {
+        return res.status(400).send({ error: 'Missing monument name' });
+    }
+
+    // Get OpenRouter API key from environment
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+        console.error('OPENROUTER_API_KEY not configured');
+        return res.status(500).send({ 
+            error: 'AI service not configured. Please add OPENROUTER_API_KEY to environment variables.' 
+        });
+    }
+
+    try {
+        // Prepare the prompt based on whether detailed explanation is requested
+        const prompt = detailed 
+            ? `Provide a detailed, educational explanation (4-5 sentences) about ${name}, a ${type || 'monument'}. Include historical significance, architectural features, and interesting facts. Be informative and engaging.`
+            : `Provide a brief, interesting summary (2-3 sentences) about ${name}, a ${type || 'monument'}. Focus on what makes it special and worth visiting.`;
+
+        // Call OpenRouter API with free Gemini Flash model
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://monumentscout.app', // Optional: your site URL
+                'X-Title': 'Monument Scout' // Optional: your app name
+            },
+            body: JSON.stringify({
+                model: 'google/gemini-flash-1.5', // Free model
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                max_tokens: detailed ? 300 : 150,
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error('OpenRouter API error:', errorData);
+            throw new Error(`OpenRouter API returned ${response.status}`);
+        }
+
+        const data = await response.json();
+        const explanation = data.choices?.[0]?.message?.content;
+
+        if (!explanation) {
+            throw new Error('No explanation generated');
+        }
+
+        console.log(`Generated ${detailed ? 'detailed' : 'brief'} explanation for: ${name}`);
+
+        res.json({
+            name,
+            type,
+            explanation: explanation.trim(),
+            detailed: !!detailed
+        });
+
+    } catch (error) {
+        console.error('Error generating explanation:', error);
+        res.status(500).send({ 
+            error: 'Failed to generate explanation. Please try again later.' 
+        });
+    }
+});
+
 // Export the Express app as a Cloud Function
 exports.api = onRequest(app);
+

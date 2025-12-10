@@ -94,6 +94,38 @@
       </div>
     </div>
 
+    <!-- Explanation Modal -->
+    <div class="explanation-modal" id="explanationModal">
+      <div class="explanation-overlay" id="explanationOverlay"></div>
+      <div class="explanation-container">
+        <div class="explanation-header">
+          <h3 id="explanationTitle">Monument Information</h3>
+          <button class="close-btn" id="closeExplanation" aria-label="Close explanation">
+            ×
+          </button>
+        </div>
+        <div class="explanation-body" id="explanationBody">
+          <div class="explanation-loading">
+            <div class="spinner"></div>
+            <p>Generating explanation...</p>
+          </div>
+        </div>
+        <div class="explanation-footer" id="explanationFooter" style="display: none;">
+          <button class="btn-more-details" id="moreDetailsBtn">
+            📖 More Details
+          </button>
+          <div class="tts-controls">
+            <button class="btn-tts" id="speakBtn" title="Read aloud">
+              🔊
+            </button>
+            <button class="btn-tts" id="stopSpeakBtn" title="Stop reading" style="display: none;">
+              🔇
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Toggle Sidebar Button -->
     <button
       class="toggle-sidebar-btn"
